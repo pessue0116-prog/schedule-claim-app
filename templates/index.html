@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>주간 공동 스케줄 선점 앱</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 16px; background: #f7f7fb; color: #222; }
+    h1 { margin: 0 0 8px 0; font-size: 24px; }
+    .hint { color: #666; margin-bottom: 16px; font-size: 14px; line-height: 1.5; }
+    .top-box, .board-box, .login-box { background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .week-nav { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; }
+    .week-nav-left { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .week-label { font-weight: bold; font-size: 16px; }
+    input, select, textarea, button { font: inherit; }
+    input, select, textarea { width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; }
+    textarea { min-height: 100px; resize: vertical; }
+    button { padding: 10px 14px; border: 1px solid #bbb; border-radius: 8px; background: #fff; cursor: pointer; }
+    button:hover { background: #f3f3f3; }
+    .primary-btn { background: #1f5eff; color: white; border-color: #1f5eff; }
+    .primary-btn:hover { background: #184dd3; }
+    .danger-btn { border-color: #d33; color: #d33; }
+    .danger-btn:hover { background: #fff3f3; }
+    .muted-btn { border-color: #888; color: #555; }
+    .success-btn { border-color: #2f8f3b; color: #2f8f3b; background: #f5fff4; }
+    .success-btn:hover { background: #ecfbe9; }
+    .error { color: #c62828; margin-top: 6px; font-size: 14px; min-height: 20px; }
+    .desktop-board { display: none; }
+    .mobile-board { display: block; }
+    .desktop-board-grid { display: grid; grid-template-columns: 80px repeat(7, minmax(0, 1fr)); gap: 1px; background: #ddd; border: 1px solid #ddd; border-radius: 12px; overflow: hidden; }
+    .grid-cell { background: #fff; min-height: 120px; max-height: 120px; padding: 6px; overflow-y: auto; }
+    .header-cell { background: #f3f6ff; font-weight: bold; min-height: auto; max-height: none; }
+    .time-header { background: #fafafa; font-weight: bold; font-size: 13px; min-height: 120px; max-height: 120px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .mobile-slot-block { border: 1px solid #ddd; border-radius: 12px; margin-bottom: 14px; overflow: hidden; background: #fff; }
+    .mobile-slot-header { background: #f3f6ff; padding: 12px 14px; font-weight: bold; font-size: 15px; border-bottom: 1px solid #e8ecff; }
+    .mobile-slot-days { padding: 10px; }
+    .mobile-day-row { border: 1px solid #eee; border-radius: 10px; padding: 10px; margin-bottom: 10px; background: #fff; min-height: 96px; }
+    .mobile-day-row:last-child { margin-bottom: 0; }
+    .mobile-day-title { font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #444; }
+    .quick-add-empty { border: 1px dashed #bbb; border-radius: 8px; background: #fafafa; color: #666; padding: 12px; text-align: center; cursor: pointer; min-height: 64px; display: flex; align-items: center; justify-content: center; }
+    .quick-add-empty:hover { background: #f2f6ff; border-color: #9db6ff; color: #2d4ea1; }
+    .schedule-card { border: 1px solid #d8d8d8; border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+    .schedule-card:last-child { margin-bottom: 0; }
+    .schedule-card.unclaimed-card { background: #ffffff; border-color: #d8d8d8; }
+    .schedule-card.claimed-card { background: #e8f7d9; border-color: #7dbb5e; }
+    .schedule-card.my-claimed-card { background: #d8f0c2; border-color: #3e9a39; box-shadow: inset 0 0 0 1px #3e9a39; }
+    .schedule-card.done-card { opacity: 0.6; background: #f1f1f1 !important; border-color: #bdbdbd !important; }
+    .schedule-title { font-size: 14px; font-weight: bold; margin-bottom: 4px; line-height: 1.4; }
+    .schedule-note { white-space: pre-wrap; font-size: 13px; margin-bottom: 6px; line-height: 1.4; }
+    .claimed { color: #0a7a2f; font-weight: bold; font-size: 12px; margin-bottom: 6px; }
+    .unclaimed { color: #b26a00; font-weight: bold; font-size: 12px; margin-bottom: 6px; }
+    .done-text { color: #666; font-weight: bold; font-size: 12px; margin-bottom: 6px; }
+    .small-btn { padding: 6px 10px; font-size: 12px; margin-right: 6px; margin-top: 4px; }
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .edit-mode-box { margin-top: 10px; padding: 10px; border: 1px dashed #bbb; border-radius: 10px; background: #fafafa; }
+    .edit-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .login-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+    .login-row > div { flex: 1; min-width: 180px; }
+    .user-badge { display: inline-block; padding: 6px 10px; background: #eef3ff; border: 1px solid #ccd8ff; border-radius: 999px; font-size: 13px; margin-bottom: 8px; }
+    .hidden { display: none !important; }
+    @media (min-width: 900px) {
+      body { padding: 24px; }
+      .form-grid { grid-template-columns: 1fr 1fr; }
+      .desktop-board { display: block; }
+      .mobile-board { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <h1>주간 공동 스케줄 선점 앱</h1>
+  <div class="hint">이름만 입력해서 로그인하고 사용할 수 있어. 교시는 1~8교시야.</div>
+
+  <div class="login-box" id="login-box">
+    <h2 style="margin-top:0;">로그인</h2>
+    <div class="login-row">
+      <div>
+        <label for="login-name"><strong>이름</strong></label>
+        <input id="login-name" type="text" placeholder="예: 은수" />
+      </div>
+      <div style="flex:0 0 auto;">
+        <button type="button" id="login-btn" class="primary-btn">입장하기</button>
+      </div>
+    </div>
+    <div class="error" id="login-error"></div>
+  </div>
+
+  <div id="app-area" class="hidden">
+    <div class="top-box">
+      <div class="user-badge" id="current-user-badge"></div>
+      <div class="week-nav">
+        <div class="week-nav-left">
+          <button type="button" id="prev-week-btn">이전 주</button>
+          <button type="button" id="this-week-btn">이번 주</button>
+          <button type="button" id="next-week-btn">다음 주</button>
+          <button type="button" id="logout-btn" class="muted-btn">이름 바꾸기</button>
+        </div>
+        <div class="week-label" id="week-label"></div>
+      </div>
+
+      <div class="form-grid">
+        <div>
+          <label for="schedule-date"><strong>날짜</strong></label>
+          <select id="schedule-date"></select>
+
+          <label for="time-slot"><strong>교시</strong></label>
+          <select id="time-slot"></select>
+        </div>
+
+        <div>
+          <label for="title"><strong>스케줄 제목</strong></label>
+          <input id="title" type="text" placeholder="예: 발표 준비" />
+
+          <label for="note"><strong>설명</strong></label>
+          <textarea id="note" placeholder="장소, 참고사항 등을 적어줘"></textarea>
+        </div>
+      </div>
+
+      <button type="button" id="create-btn" class="primary-btn">스케줄 등록</button>
+      <div id="error-box" class="error"></div>
+    </div>
+
+    <div class="board-box desktop-board">
+      <div class="desktop-board-grid" id="desktop-board-grid"></div>
+    </div>
+
+    <div class="board-box mobile-board">
+      <div id="mobile-board"></div>
+    </div>
+  </div>
+
+  <script>
+    const initialWeekStart = "{{ week_start }}";
+    const STORAGE_KEY = "schedule_app_login_name";
+
+    const protocol = location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(`${protocol}://${location.host}/ws`);
+
+    const loginBoxEl = document.getElementById("login-box");
+    const appAreaEl = document.getElementById("app-area");
+    const loginNameEl = document.getElementById("login-name");
+    const loginBtnEl = document.getElementById("login-btn");
+    const loginErrorEl = document.getElementById("login-error");
+    const logoutBtnEl = document.getElementById("logout-btn");
+    const currentUserBadgeEl = document.getElementById("current-user-badge");
+
+    const dateEl = document.getElementById("schedule-date");
+    const timeSlotEl = document.getElementById("time-slot");
+    const titleEl = document.getElementById("title");
+    const noteEl = document.getElementById("note");
+    const createBtn = document.getElementById("create-btn");
+    const errorBoxEl = document.getElementById("error-box");
+    const weekLabelEl = document.getElementById("week-label");
+    const desktopBoardGridEl = document.getElementById("desktop-board-grid");
+    const mobileBoardEl = document.getElementById("mobile-board");
+
+    const prevWeekBtn = document.getElementById("prev-week-btn");
+    const nextWeekBtn = document.getElementById("next-week-btn");
+    const thisWeekBtn = document.getElementById("this-week-btn");
+
+    let currentWeekStart = initialWeekStart;
+    let weekDates = [];
+    let timeSlots = [];
+    let schedules = [];
+    let editingId = null;
+    let currentUser = "";
+
+    function showError(message) {
+      errorBoxEl.textContent = message;
+      setTimeout(() => {
+        if (errorBoxEl.textContent === message) errorBoxEl.textContent = "";
+      }, 2500);
+    }
+
+    function showLoginError(message) {
+      loginErrorEl.textContent = message;
+      setTimeout(() => {
+        if (loginErrorEl.textContent === message) loginErrorEl.textContent = "";
+      }, 2500);
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function getWeekLabel() {
+      if (weekDates.length === 0) return "";
+      return `${weekDates[0].display} ~ ${weekDates[weekDates.length - 1].display}`;
+    }
+
+    function addDays(dateStr, days) {
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const d = new Date(year, month - 1, day);
+      d.setDate(d.getDate() + days);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${dd}`;
+    }
+
+    function applyLoginState() {
+      if (currentUser) {
+        loginBoxEl.classList.add("hidden");
+        appAreaEl.classList.remove("hidden");
+        currentUserBadgeEl.textContent = `로그인: ${currentUser}`;
+      } else {
+        loginBoxEl.classList.remove("hidden");
+        appAreaEl.classList.add("hidden");
+      }
+    }
+
+    function login(name) {
+      const trimmed = name.trim();
+      if (!trimmed) return showLoginError("이름을 입력해줘.");
+      currentUser = trimmed;
+      localStorage.setItem(STORAGE_KEY, trimmed);
+      applyLoginState();
+      renderAll();
+    }
+
+    function logout() {
+      currentUser = "";
+      localStorage.removeItem(STORAGE_KEY);
+      editingId = null;
+      applyLoginState();
+    }
+
+    function restoreLogin() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && saved.trim()) currentUser = saved.trim();
+      applyLoginState();
+    }
+
+    function renderDateOptions() {
+      dateEl.innerHTML = weekDates.map(day =>
+        `<option value="${day.date}">${escapeHtml(day.label)} (${escapeHtml(day.display)})</option>`
+      ).join("");
+    }
+
+    function renderTimeOptions() {
+      timeSlotEl.innerHTML = timeSlots.map(slot =>
+        `<option value="${slot}">${escapeHtml(slot)}</option>`
+      ).join("");
+    }
+
+    function fillQuickAdd(date, timeSlot) {
+      dateEl.value = date;
+      timeSlotEl.value = timeSlot;
+      titleEl.focus();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function getSchedulesFor(date, timeSlot) {
+      return schedules.filter(item => item.schedule_date === date && item.time_slot === timeSlot);
+    }
+
+    function startEdit(id) {
+      if (!currentUser) return showError("로그인 후 이용해줘.");
+      const item = schedules.find(s => s.id === id);
+      if (!item) return;
+      if (item.creator !== currentUser) return showError("등록자만 수정할 수 있습니다.");
+      editingId = id;
+      renderAll();
+    }
+
+    function cancelEdit() {
+      editingId = null;
+      renderAll();
+    }
+
+    function saveEdit(id) {
+      if (!currentUser) return showError("로그인 후 이용해줘.");
+      const dateInput = document.getElementById(`edit-date-${id}`);
+      const timeInput = document.getElementById(`edit-time-${id}`);
+      const titleInput = document.getElementById(`edit-title-${id}`);
+      const noteInput = document.getElementById(`edit-note-${id}`);
+
+      const schedule_date = dateInput.value;
+      const time_slot = timeInput.value;
+      const title = titleInput.value.trim();
+      const note = noteInput.value.trim();
+
+      if (!schedule_date || !time_slot || !title) return showError("날짜, 교시, 제목은 필수야.");
+
+      ws.send(JSON.stringify({
+        type: "update_schedule",
+        id,
+        user: currentUser,
+        schedule_date,
+        time_slot,
+        title,
+        note
+      }));
+
+      editingId = null;
+    }
+
+    function deleteSchedule(id) {
+      if (!currentUser) return showError("로그인 후 이용해줘.");
+      if (!confirm("이 스케줄을 삭제할까?")) return;
+      ws.send(JSON.stringify({ type: "delete_schedule", id, user: currentUser }));
+    }
+
+    function completeSchedule(id) {
+      if (!currentUser) return showError("로그인 후 이용해줘.");
+      if (!confirm("이 스케줄을 완료 처리할까?")) return;
+      ws.send(JSON.stringify({ type: "complete_schedule", id, user: currentUser }));
+    }
+
+    function getCardClass(item) {
+      if (item.is_done) return "done-card";
+      if (item.claimed_by === currentUser && currentUser !== "") return "my-claimed-card";
+      if (item.claimed_by) return "claimed-card";
+      return "unclaimed-card";
+    }
+
+    function renderScheduleCard(item) {
+      const isCreator = item.creator === currentUser && currentUser !== "";
+      const isEditing = editingId === item.id;
+      const isMyClaim = item.claimed_by === currentUser && currentUser !== "";
+
+      if (isEditing) {
+        return `
+          <div class="schedule-card unclaimed-card">
+            <div class="edit-mode-box">
+              <label>날짜</label>
+              <select id="edit-date-${item.id}">
+                ${weekDates.map(day => `
+                  <option value="${day.date}" ${day.date === item.schedule_date ? "selected" : ""}>
+                    ${escapeHtml(day.label)} (${escapeHtml(day.display)})
+                  </option>
+                `).join("")}
+              </select>
+              <label>교시</label>
+              <select id="edit-time-${item.id}">
+                ${timeSlots.map(slot => `
+                  <option value="${slot}" ${slot === item.time_slot ? "selected" : ""}>
+                    ${escapeHtml(slot)}
+                  </option>
+                `).join("")}
+              </select>
+              <label>제목</label>
+              <input id="edit-title-${item.id}" type="text" value="${escapeHtml(item.title)}" />
+              <label>설명</label>
+              <textarea id="edit-note-${item.id}">${escapeHtml(item.note)}</textarea>
+              <div class="edit-actions">
+                <button type="button" class="small-btn primary-btn" onclick="saveEdit(${item.id})">저장</button>
+                <button type="button" class="small-btn muted-btn" onclick="cancelEdit()">취소</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      let actionButtons = "";
+      if (!item.claimed_by && !item.is_done) {
+        actionButtons += `<button type="button" class="small-btn" onclick="claimSchedule(${item.id})">선점</button>`;
+      } else if (isMyClaim && !item.is_done) {
+        actionButtons += `<button type="button" class="small-btn" onclick="unclaimSchedule(${item.id})">선점 취소</button>`;
+        actionButtons += `<button type="button" class="small-btn success-btn" onclick="completeSchedule(${item.id})">완료</button>`;
+      }
+      if (isCreator) {
+        actionButtons += `<button type="button" class="small-btn muted-btn" onclick="startEdit(${item.id})">수정</button>`;
+        actionButtons += `<button type="button" class="small-btn danger-btn" onclick="deleteSchedule(${item.id})">삭제</button>`;
+      }
+
+      let statusHtml = "";
+      if (item.is_done) statusHtml = `<div class="done-text">완료</div>`;
+      else if (item.claimed_by) statusHtml = `<div class="claimed">${escapeHtml(item.claimed_by)}</div>`;
+      else statusHtml = `<div class="unclaimed">미선점</div>`;
+
+      return `
+        <div class="schedule-card ${getCardClass(item)}">
+          <div class="schedule-title">${escapeHtml(item.title)}</div>
+          <div class="schedule-note">${escapeHtml(item.note)}</div>
+          ${statusHtml}
+          ${actionButtons}
+        </div>
+      `;
+    }
+
+    function renderScheduleCards(items, date, timeSlot) {
+      if (items.length === 0) {
+        return `<div class="quick-add-empty" onclick="fillQuickAdd('${date}', '${timeSlot}')">+ 빠른 등록</div>`;
+      }
+      return items.map(renderScheduleCard).join("");
+    }
+
+    function renderDesktopBoard() {
+      let html = "";
+      html += `<div class="grid-cell header-cell"></div>`;
+      html += weekDates.map(day =>
+        `<div class="grid-cell header-cell">${escapeHtml(day.label)}<br><span style="font-size:12px;color:#666">${escapeHtml(day.display)}</span></div>`
+      ).join("");
+
+      timeSlots.forEach(slot => {
+        html += `<div class="grid-cell time-header">${escapeHtml(slot)}</div>`;
+        weekDates.forEach(day => {
+          html += `<div class="grid-cell">${renderScheduleCards(getSchedulesFor(day.date, slot), day.date, slot)}</div>`;
+        });
+      });
+
+      desktopBoardGridEl.innerHTML = html;
+    }
+
+    function renderMobileBoard() {
+      mobileBoardEl.innerHTML = timeSlots.map(slot => {
+        const dayRows = weekDates.map(day => `
+          <div class="mobile-day-row">
+            <div class="mobile-day-title">${escapeHtml(day.label)} (${escapeHtml(day.display)})</div>
+            ${renderScheduleCards(getSchedulesFor(day.date, slot), day.date, slot)}
+          </div>
+        `).join("");
+
+        return `<div class="mobile-slot-block"><div class="mobile-slot-header">${escapeHtml(slot)}</div><div class="mobile-slot-days">${dayRows}</div></div>`;
+      }).join("");
+    }
+
+    function renderAll() {
+      if (!currentUser) return;
+      weekLabelEl.textContent = getWeekLabel();
+      renderDateOptions();
+      renderTimeOptions();
+      renderDesktopBoard();
+      renderMobileBoard();
+      currentUserBadgeEl.textContent = `로그인: ${currentUser}`;
+    }
+
+    function loadWeek(weekStart) {
+      currentWeekStart = weekStart;
+      editingId = null;
+      ws.send(JSON.stringify({ type: "load_week", week_start: weekStart }));
+    }
+
+    function claimSchedule(id) {
+      if (!currentUser) return showError("로그인 후 이용해줘.");
+      ws.send(JSON.stringify({ type: "claim_schedule", id, user: currentUser }));
+    }
+
+    function unclaimSchedule(id) {
+      if (!currentUser) return showError("로그인 후 이용해줘.");
+      ws.send(JSON.stringify({ type: "unclaim_schedule", id, user: currentUser }));
+    }
+
+    createBtn.addEventListener("click", () => {
+      if (!currentUser) return showError("로그인 후 이용해줘.");
+      const schedule_date = dateEl.value;
+      const time_slot = timeSlotEl.value;
+      const title = titleEl.value.trim();
+      const note = noteEl.value.trim();
+
+      if (!schedule_date) return showError("날짜를 선택해줘.");
+      if (!time_slot) return showError("교시를 선택해줘.");
+      if (!title) return showError("스케줄 제목을 입력해줘.");
+
+      ws.send(JSON.stringify({
+        type: "create_schedule",
+        creator: currentUser,
+        schedule_date,
+        time_slot,
+        title,
+        note
+      }));
+
+      titleEl.value = "";
+      noteEl.value = "";
+    });
+
+    loginBtnEl.addEventListener("click", () => login(loginNameEl.value));
+    loginNameEl.addEventListener("keydown", (e) => { if (e.key === "Enter") login(loginNameEl.value); });
+    logoutBtnEl.addEventListener("click", () => logout());
+    prevWeekBtn.addEventListener("click", () => loadWeek(addDays(currentWeekStart, -7)));
+    nextWeekBtn.addEventListener("click", () => loadWeek(addDays(currentWeekStart, 7)));
+    thisWeekBtn.addEventListener("click", () => {
+      const today = new Date();
+      const day = today.getDay();
+      const mondayOffset = day === 0 ? -6 : 1 - day;
+      today.setDate(today.getDate() + mondayOffset);
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, "0");
+      const d = String(today.getDate()).padStart(2, "0");
+      loadWeek(`${y}-${m}-${d}`);
+    });
+
+    ws.addEventListener("open", () => {
+      restoreLogin();
+      loadWeek(initialWeekStart);
+    });
+
+    ws.addEventListener("message", (event) => {
+      const message = JSON.parse(event.data);
+
+      if (message.type === "week_data") {
+        currentWeekStart = message.week_start;
+        weekDates = message.week_dates;
+        timeSlots = message.time_slots;
+        schedules = message.schedules;
+        renderAll();
+      } else if (message.type === "schedule_created") {
+        const created = message.schedule;
+        const visibleDates = new Set(weekDates.map(day => day.date));
+        if (visibleDates.has(created.schedule_date)) {
+          schedules.push(created);
+          renderAll();
+        }
+      } else if (message.type === "schedule_updated") {
+        const updated = message.schedule;
+        const visibleDates = new Set(weekDates.map(day => day.date));
+        if (visibleDates.has(updated.schedule_date)) {
+          let found = false;
+          schedules = schedules.map(item => {
+            if (item.id === updated.id) {
+              found = true;
+              return updated;
+            }
+            return item;
+          });
+          if (!found) schedules.push(updated);
+          renderAll();
+        } else {
+          schedules = schedules.filter(item => item.id !== updated.id);
+          renderAll();
+        }
+      } else if (message.type === "schedule_deleted") {
+        schedules = schedules.filter(item => item.id !== message.schedule_id);
+        if (editingId === message.schedule_id) editingId = null;
+        renderAll();
+      } else if (message.type === "error") {
+        if (currentUser) showError(message.message);
+        else showLoginError(message.message);
+      }
+    });
+
+    window.claimSchedule = claimSchedule;
+    window.unclaimSchedule = unclaimSchedule;
+    window.startEdit = startEdit;
+    window.cancelEdit = cancelEdit;
+    window.saveEdit = saveEdit;
+    window.deleteSchedule = deleteSchedule;
+    window.fillQuickAdd = fillQuickAdd;
+    window.completeSchedule = completeSchedule;
+  </script>
+</body>
+</html>
