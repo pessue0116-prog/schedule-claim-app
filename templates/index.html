@@ -407,17 +407,24 @@
     }
 
     function renderMobileBoard() {
-      mobileBoardEl.innerHTML = timeSlots.map(slot => {
-        const dayRows = weekDates.map(day => `
-          <div class="mobile-day-row">
-            <div class="mobile-day-title">${escapeHtml(day.label)} (${escapeHtml(day.display)})</div>
-            ${renderScheduleCards(getSchedulesFor(day.date, slot), day.date, slot)}
-          </div>
-        `).join("");
+  mobileBoardEl.innerHTML = weekDates.map(day => {
+    const slotRows = timeSlots.map(slot => `
+      <div class="mobile-day-row">
+        <div class="mobile-day-title">${escapeHtml(slot)}</div>
+        ${renderScheduleCards(getSchedulesFor(day.date, slot), day.date, slot)}
+      </div>
+    `).join("");
 
-        return `<div class="mobile-slot-block"><div class="mobile-slot-header">${escapeHtml(slot)}</div><div class="mobile-slot-days">${dayRows}</div></div>`;
-      }).join("");
-    }
+    return `
+      <div class="mobile-slot-block">
+        <div class="mobile-slot-header">${escapeHtml(day.label)} (${escapeHtml(day.display)})</div>
+        <div class="mobile-slot-days">
+          ${slotRows}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
 
     function renderAll() {
       if (!currentUser) return;
